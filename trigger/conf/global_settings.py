@@ -544,7 +544,7 @@ def _stage_acls(acls, log=None, sanitize_acl=False):
                 fails.append("Unable to stage TFTP File %s" % str(acls))
                 continue
             else:
-                os.chmod(dst_file, 0644)
+                os.chmod(dst_file, 0o644)
 
         with open(src_file, 'r') as src_acl:
             file_contents = src_acl.read()

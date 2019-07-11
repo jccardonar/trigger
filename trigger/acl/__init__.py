@@ -23,7 +23,7 @@ __all__ = ['parser', 'acl_exists']
 
 # Parser
 from . import parser
-from parser import *
+from .parser import *
 __all__.extend(parser.__all__)
 
 # Functions

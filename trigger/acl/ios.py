@@ -21,7 +21,7 @@ __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathanism@aol.com'
 __copyright__ = 'Copyright 2006-2013, AOL Inc.; 2013 Saleforce.com'
 
-from grammar import *
+from .grammar import *
 
 class Remark(Comment):
     """
@@ -84,7 +84,7 @@ def handle_ios_acl(rows):
     for d in rows:
         if not d:
             continue
-        for k, v in d.iteritems():
+        for k, v in d.items():
             if k == 'no':
                 acl = ACL()
             elif k == 'name':
@@ -124,7 +124,7 @@ rules.update({
     'kw_any':                    ('"any"', None),
     'host_ipv4':            '"host", ts, ipv4',
     S('ios_masked_ipv4'):   ('ipv4, ts, ipv4_inverse_mask',
-                             lambda (net, length): TIP('%s/%d' % (net, length))),
+                             lambda net, length: TIP('%s/%d' % (net, length))),
     'ipv4_inverse_mask':    (literals(inverse_mask_table),
                              lambda x: inverse_mask_table[TIP(x)]),
 
@@ -140,10 +140,10 @@ rules.update({
                              handle_ios_match),
     S('ios_ip_port'):            'ios_ip, (ts, unary_port / ios_range)?',
     S('unary_port'):            ('unary_port_operator, ts, port',
-                             lambda (op, arg): unary_port_operators[op](arg)),
+                             lambda op, arg: unary_port_operators[op](arg)),
     'unary_port_operator':  literals(unary_port_operators),
     S('ios_range'):            ('"range", ts, port, ts, port',
-                             lambda (x, y): [(x, y)]),
+                             lambda x, y: [(x, y)]),
     'established':            '"established"',
     S('ios_icmp_match'):    ('icmp, ts, ios_ip, ts, ios_ip, (ts, ios_log)?, '
                              '(ts, ios_icmp_message / '

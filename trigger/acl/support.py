@@ -39,7 +39,10 @@ __copyright__ = 'Copyright 2006-2013, AOL Inc.; 2013 Saleforce.com'
 import IPy
 from trigger import exceptions
 from trigger.conf import settings
-from dicts import *
+from .dicts import *
+
+def cmp(a, b):
+    return (a > b) - (a < b)
 
 # Temporary resting place for comments, so the rest of the parser can
 # ignore them.  Yes, this makes the library not thread-safe.
@@ -76,7 +79,8 @@ def check_range(values, min, max):
             for subvalue in value:
                 check_range([subvalue], min, max)
         except TypeError:
-            if not min <= value <= max:
+            #if not min <= value <= max:
+            if not ((value >= min) and (value <= max)):
                 raise exceptions.BadMatchArgRange('match arg %s must be between %d and %d'
                                                   % (str(value), min, max))
 
@@ -156,11 +160,11 @@ class MyDict(dict):
         return '<%s: %s>' % (self.__class__.__name__, str(self))
 
     def __str__(self):
-        return ', '.join(['%s %s' % (k, v) for k, v in self.iteritems()])
+        return ', '.join(['%s %s' % (k, v) for k, v in self.items()])
 
     def update(self, d):
         '''Force this to go through __setitem__.'''
-        for k, v in d.iteritems():
+        for k, v in d.items():
             self[k] = v
 
 class Modifiers(MyDict):
@@ -201,7 +205,7 @@ class Modifiers(MyDict):
         """
         Output the modifiers to the only supported format!
         """
-        keys = self.keys()
+        keys = list(self.keys())
         keys.sort()
         return [k + (self[k] and ' '+str(self[k]) or '') + ';' for k in keys]
 
@@ -401,7 +405,7 @@ class TIP(IPy.IP):
         inactive = getattr(data, 'inactive', False)
 
         # Is data a string?
-        if isinstance(data, (str, unicode)):
+        if isinstance(data, str):
             d = data.split()
             # This means we got something like "1.2.3.4 except" or "inactive:
             # 1.2.3.4'
@@ -886,7 +890,7 @@ class Term(object):
         else:
             raise VendorSupportLacking('"%s" action not supported by IOS' % ' '.join(self.action))
         suffix = ''
-        for k, v in self.modifiers.iteritems():
+        for k, v in self.modifiers.items():
             if k == 'syslog':
                 suffix += ' log'
             elif k == 'count':
@@ -959,7 +963,7 @@ class Protocol(object):
         #112: 'vrrp' # Breaks Cisco compatibility
     }
 
-    name2num = dict([(v, k) for k, v in num2name.iteritems()])
+    name2num = dict([(v, k) for k, v in num2name.items()])
     name2num['ahp'] = 51    # undocumented Cisco special name
 
     def __init__(self, arg):
@@ -982,6 +986,24 @@ class Protocol(object):
     def __cmp__(self, other):
         '''Protocol(6) == 'tcp' == 6 == Protocol('6').'''
         return self.value.__cmp__(Protocol(other).value)
+
+    def __lt__(self, other):
+        return self.value.__lt__(Protocol(other).value)
+
+    def __gt__(self, other):
+        return self.value.__gt__(Protocol(other).value)
+
+    def __eq__(self, other):
+        return self.value.__eq__(Protocol(other).value)
+
+    def __ne__(self, other):
+        return self.value.__ne__(Protocol(other).value)
+
+    def __ge__(self, other):
+        return self.value.__ge__(Protocol(other).value)
+
+    def __le__(self, other):
+        return self.value.__le__(Protocol(other).value)
 
     def __hash__(self):
         return hash(self.value)
@@ -1011,19 +1033,19 @@ class Matches(MyDict):
             key = key[:-7]
 
         if key in ('port', 'source-port', 'destination-port'):
-            arg = map(do_port_lookup, arg)
+            arg = list(map(do_port_lookup, arg))
             check_range(arg, 0, 65535)
         elif key == 'protocol':
-            arg = map(do_protocol_lookup, arg)
+            arg = list(map(do_protocol_lookup, arg))
             check_range(arg, 0, 255)
         elif key == 'fragment-offset':
-            arg = map(do_port_lookup, arg)
+            arg = list(map(do_port_lookup, arg))
             check_range(arg, 0, 8191)
         elif key == 'icmp-type':
-            arg = map(do_icmp_type_lookup, arg)
+            arg = list(map(do_icmp_type_lookup, arg))
             check_range(arg, 0, 255)
         elif key == 'icmp-code':
-            arg = map(do_icmp_code_lookup, arg)
+            arg = list(map(do_icmp_code_lookup, arg))
             check_range(arg, 0, 255)
         elif key == 'icmp-type-code':
             # Not intended for external use; this is for parser convenience.
@@ -1037,10 +1059,10 @@ class Matches(MyDict):
                     pass
             return
         elif key == 'packet-length':
-            arg = map(int, arg)
+            arg = list(map(int, arg))
             check_range(arg, 0, 65535)
         elif key in ('address', 'source-address', 'destination-address'):
-            arg = map(TIP, arg)
+            arg = list(map(TIP, arg))
         elif key in ('prefix-list', 'source-prefix-list',
                      'destination-prefix-list'):
             for pl in arg:
@@ -1054,7 +1076,7 @@ class Matches(MyDict):
         elif key == 'tcp-flags':
             pass
         elif key == 'ip-options':
-            arg = map(do_ip_option_lookup, arg)
+            arg = list(map(do_ip_option_lookup, arg))
             check_range(arg, 0, 255)
         elif key in ('first-fragment', 'is-fragment'):
             arg = []
@@ -1148,9 +1170,12 @@ class Matches(MyDict):
         """Return a list that can form the ``from { ... }`` clause of the term."""
         a = []
         keys = self.keys()
-        keys.sort(lambda x, y: cmp(junos_match_order[x], junos_match_order[y]))
+        cmpf = lambda x, y: cmp(junos_match_order[x], junos_match_order[y])
+        from functools import cmp_to_key
+        keyf = cmp_to_key(cmpf)
+        keys.sort(key=keyf)
         for s in keys:
-            matches = map(self.junos_str, self[s])
+            matches = list(map(self.junos_str, self[s]))
             has_negated_addrs = any(m for m in matches if m.endswith(' except'))
             if s in address_matches:
                 # Check to see if any of the added is any, and if so break out,
@@ -1183,7 +1208,7 @@ class Matches(MyDict):
         sourceports = []
         destports = []
         trailers = []
-        for key, arg in self.iteritems():
+        for key, arg in self.items():
             if key == 'source-port':
                 sourceports += self.ios_port_str(arg)
             elif key == 'destination-port':
@@ -1193,7 +1218,7 @@ class Matches(MyDict):
             elif key == 'destination-address':
                 dests += self.ios_address_str(arg)
             elif key == 'protocol':
-                protos += map(str, arg)
+                protos += list(map(str, arg))
             elif key == 'icmp-type':
                 for type in arg.expanded():
                     if 'icmp-code' in self:

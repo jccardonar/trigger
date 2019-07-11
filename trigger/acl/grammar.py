@@ -21,7 +21,7 @@ __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathanism@aol.com'
 __copyright__ = 'Copyright 2006-2013, AOL Inc.; 2013 Saleforce.com'
 
-from support import *
+from .support import *
 
 # Each production can be any of:
 # 1. string
@@ -47,7 +47,10 @@ def S(prod):
 def literals(d):
     '''Longest match of all the strings that are keys of 'd'.'''
     keys = [str(key) for key in d]
-    keys.sort(lambda x, y: len(y) - len(x))
+    cmpf = lambda x, y: len(y) - len(x)
+    from functools import   cmp_to_key
+    keyf = cmp_to_key(cmpf)
+    keys.sort(key=keyf)
     return ' / '.join(['"%s"' % key for key in keys])
 
 def update(d, **kwargs):
@@ -55,7 +58,7 @@ def update(d, **kwargs):
     # allowed at AOL.  For example, a Juniper term can have two different
     # 'destination-address' clauses, which means that the first will be
     # ignored.  This led to an outage on 2006-10-11.
-    for key in kwargs.iterkeys():
+    for key in kwargs.keys():
         if key in d:
             raise exceptions.ParseError('duplicate %s' % key)
     d.update(kwargs)
@@ -64,7 +67,7 @@ def update(d, **kwargs):
 def dict_sum(dlist):
     dsum = {}
     for d in dlist:
-        for k, v in d.iteritems():
+        for k, v in d.items():
             if k in dsum:
                 dsum[k] += v
             else:

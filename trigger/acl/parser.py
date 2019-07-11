@@ -40,9 +40,9 @@ import socket
 from trigger import exceptions
 from trigger.conf import settings
   
-from support import *
-from junos import *
-from ios import *
+from .support import *
+from .junos import *
+from .ios import *
 
 # Exports
 __all__ = (
@@ -85,7 +85,8 @@ Comments = []
 class ACLProcessor(DispatchProcessor):
     pass
 
-def default_processor(self, (tag, start, stop, subtags), buffer):
+def default_processor(self, xxx_todo_changeme, buffer):
+    (tag, start, stop, subtags) = xxx_todo_changeme
     if not subtags:
         return buffer[start:stop]
     elif len(subtags) == 1:
@@ -95,7 +96,8 @@ def default_processor(self, (tag, start, stop, subtags), buffer):
 
 def make_nondefault_processor(action):
     if callable(action):
-        def processor(self, (tag, start, stop, subtags), buffer):
+        def processor(self, xxx_todo_changeme, buffer):
+            (tag, start, stop, subtags) = xxx_todo_changeme
             if tag in subtagged:
                 results = [getattr(self, subtag[0])(subtag, buffer)
                            for subtag in subtags]
@@ -103,13 +105,14 @@ def make_nondefault_processor(action):
             else:
                 return action(buffer[start:stop])
     else:
-        def processor(self, (tag, start, stop, subtags), buffer):
+        def processor(self, xxx_todo_changeme, buffer):
+            (tag, start, stop, subtags) = xxx_todo_changeme
             return action
 
     return processor
 
 grammar = []
-for production, rule in rules.iteritems():
+for production, rule in rules.items():
     if isinstance(rule, tuple):
         assert len(rule) == 2
         setattr(ACLProcessor, production, make_nondefault_processor(rule[1]))

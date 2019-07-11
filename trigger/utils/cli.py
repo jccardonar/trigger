@@ -78,7 +78,7 @@ def yesno(prompt, default=False, autoyes=False):
         yn = sys.stdin.read(1)
     finally:
         termios.tcsetattr(fd, termios.TCSANOW, attr)
-        print ''
+        print('')
 
     if yn in ('y', 'Y'):
         return True
@@ -116,7 +116,7 @@ def print_severed_head():
 
     Thanks to Jeff Sullivan for this best error message ever.
     """
-    print r"""
+    print (r"""
 
                                                                 _( (~\
          _ _                        /                          ( \> > \
@@ -140,7 +140,7 @@ def print_severed_head():
         ;                            ;;+_  :::. :..;;;         YOU LOSE
                                      ;;;;;;,;;;;;;;;,;
 
-"""
+""")
 
 def pretty_time(t):
     """
@@ -322,4 +322,4 @@ class Whirlygig(object):
                 self.whirl = self.whirlygig[:]
             time.sleep(.1)
             cnt += 1
-        print '\b' + self.done_msg
+        print('\b' + self.done_msg)
